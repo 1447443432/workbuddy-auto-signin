@@ -136,10 +136,21 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 
 | 任务 | 频率 | 干什么 |
 |---|---|---|
-| `WorkBuddyAutoSignin` | 每天 00:05 | 签到 + 成长中心，静默写 `signin.log` |
-| `WorkBuddyGrowthPoll` | 每 4 小时 | 补签（未签才签）+ 成长中心全套 |
+| `WorkBuddyAutoSignin` | 每天 00:05 | 执行 `signin.py silent`：签到 + 成长中心，写日志 |
+| `WorkBuddyGrowthPoll` | 每天 01:00、05:00、09:00、13:00、17:00、21:00 | 执行 `signin.py silent-poll`：补签 + 成长中心，有领取或异常时写日志 |
 
-两个任务都零 Token、无窗口、关机错过后下次开机自动补跑。装完后终端会打印结果和下次运行时间。
+两个任务直接由 Windows 任务计划程序启动，不调用 AI 模型，也不需要 WorkBuddy 窗口保持打开。安装脚本注册的是当前 Windows 账号的交互式登录任务，使用普通权限；运行时需要该账号已登录，并能访问本机凭据和网络。任务允许在电池供电时启动和继续运行，不会主动唤醒或启动电脑。
+
+任务启用了「错过计划开始时间后尽快运行」：关机或睡眠错过触发时间后，Windows 可在电脑恢复且满足运行条件时补跑；补跑时机受系统状态和任务计划程序影响，不能保证每次错过都单独执行，跨天恢复也不能保证补上前一天的签到。之后的轮询仍会检查当天签到。安装完成后终端会打印任务状态和下次运行时间。
+
+**每次运行的过程**：
+
+1. 任务计划程序按计划启动 `pythonw.exe`，用脚本的绝对路径执行对应命令，因此没有终端窗口。
+2. 脚本读取本机登录凭据；若已绑定多个账号，就依次处理各账号。加密凭据会使用兼容的 WorkBuddy 运行时解密，账号失效或认证失败会在结果中提示。
+3. 查询当天签到状态；未签到时尝试领取。之后处理成长中心可用的礼物、任务和旅行等项目；网络不可达、时间预算耗尽或认证被拒时，会跳过后续相关处理。
+4. 签到任务每轮记录结果；轮询任务在没有领取、错误或待处理事项的空跑时默认不写日志。多账号轮流执行，时间不够的账号留待下一轮。
+
+签到任务的系统运行上限为 10 分钟，轮询任务为 5 分钟；脚本自身默认时间预算分别为 7 分钟和 3 分钟。预算用于提前收尾，不保证网络或服务端故障时一定成功。
 
 脚本仅在两个任务注册成功、且都能读取到任务和运行信息后显示「完成 / 两个定时任务已就位」。任一步失败都会报告出错阶段和任务名，并以退出码 `1` 结束；若已有部分任务注册成功，会列出并保留，解决问题后重跑即可更新同名任务。
 
@@ -168,6 +179,17 @@ Unregister-ScheduledTask -TaskName "WorkBuddyGrowthPoll" -Confirm:$false
 ```powershell
 Get-Content signin.log -Tail 5   # 或用记事本打开
 ```
+
+**查看任务状态与手动触发**（在 PowerShell 中执行）：
+
+```powershell
+Get-ScheduledTask -TaskName WorkBuddyAutoSignin,WorkBuddyGrowthPoll | Select-Object TaskName, State
+Get-ScheduledTaskInfo -TaskName WorkBuddyAutoSignin | Select-Object LastRunTime, LastTaskResult, NextRunTime
+Get-ScheduledTaskInfo -TaskName WorkBuddyGrowthPoll | Select-Object LastRunTime, LastTaskResult, NextRunTime
+Start-ScheduledTask -TaskName WorkBuddyAutoSignin  # 立即执行一次完整签到和成长中心
+```
+
+手动触发也会执行领取等操作；等待任务结束后查看 `signin.log` 中的 `result`、`report` 和 `needs_attention`。`LastTaskResult` 为 `0` 表示任务进程成功结束；结果不为 `0` 或日志显示需要处理时，应结合日志排查。轮询空跑默认不写日志，所以没有新日志不一定代表任务没有运行。
 
 日志格式（每行一条 JSON）：
 
