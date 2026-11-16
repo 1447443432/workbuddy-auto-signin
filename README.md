@@ -137,7 +137,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 | 任务 | 频率 | 干什么 |
 |---|---|---|
 | `WorkBuddyAutoSignin` | 每天 00:05 | 执行 `signin.py silent`：签到 + 成长中心，写日志 |
-| `WorkBuddyGrowthPoll` | 每天 01:00、05:00、09:00、13:00、17:00、21:00 | 执行 `signin.py silent-poll`：补签 + 成长中心，有领取或异常时写日志 |
+| `WorkBuddyGrowthPoll` | 每天 01:00、05:00、09:00、13:00、17:00、21:00 | 执行 `signin.py silent-poll`：补签 + 成长中心，每轮写日志 |
 
 两个任务直接由 Windows 任务计划程序启动，不调用 AI 模型，也不需要 WorkBuddy 窗口保持打开。安装脚本注册的是当前 Windows 账号的交互式登录任务，使用普通权限；运行时需要该账号已登录，并能访问本机凭据和网络。任务允许在电池供电时启动和继续运行，不会主动唤醒或启动电脑。
 
@@ -148,7 +148,7 @@ powershell -ExecutionPolicy Bypass -File .\install-windows.ps1
 1. 任务计划程序按计划启动 `pythonw.exe`，用脚本的绝对路径执行对应命令，因此没有终端窗口。
 2. 脚本读取本机登录凭据；若已绑定多个账号，就依次处理各账号。加密凭据会使用兼容的 WorkBuddy 运行时解密，账号失效或认证失败会在结果中提示。
 3. 查询当天签到状态；未签到时尝试领取。之后处理成长中心可用的礼物、任务和旅行等项目；网络不可达、时间预算耗尽或认证被拒时，会跳过后续相关处理。
-4. 签到任务每轮记录结果；轮询任务在没有领取、错误或待处理事项的空跑时默认不写日志。多账号轮流执行，时间不够的账号留待下一轮。
+4. 签到和轮询任务默认每轮记录结果，包括没有领取事项的空跑。多账号轮流执行，时间不够的账号留待下一轮。
 
 签到任务的系统运行上限为 10 分钟，轮询任务为 5 分钟；脚本自身默认时间预算分别为 7 分钟和 3 分钟。预算用于提前收尾，不保证网络或服务端故障时一定成功。
 
@@ -189,7 +189,7 @@ Get-ScheduledTaskInfo -TaskName WorkBuddyGrowthPoll | Select-Object LastRunTime,
 Start-ScheduledTask -TaskName WorkBuddyAutoSignin  # 立即执行一次完整签到和成长中心
 ```
 
-手动触发也会执行领取等操作；等待任务结束后查看 `signin.log` 中的 `result`、`report` 和 `needs_attention`。`LastTaskResult` 为 `0` 表示任务进程成功结束；结果不为 `0` 或日志显示需要处理时，应结合日志排查。轮询空跑默认不写日志，所以没有新日志不一定代表任务没有运行。
+手动触发也会执行领取等操作；等待任务结束后查看 `signin.log` 中的 `result`、`report` 和 `needs_attention`。`LastTaskResult` 为 `0` 表示任务进程成功结束；结果不为 `0` 或日志显示需要处理时，应结合日志排查。轮询默认每轮写日志；若没有新记录，请检查任务状态、日志路径和写入权限。
 
 日志格式（每行一条 JSON）：
 
@@ -206,7 +206,7 @@ Start-ScheduledTask -TaskName WorkBuddyAutoSignin  # 立即执行一次完整签
 
 > WorkBuddy 脚本日志写入前超过 1 MiB 时轮转，保留当前日志和最近 3 个备份（`signin.log.1` 到 `.3`），最旧备份会被覆盖；单条超大日志可能超过该大小。轮转和写入通过锁文件 `signin.log.lock` 协调并发任务。自定义日志路径同样适用。此策略不管理 Qoder 或 macOS launchd 的 stdout/stderr 日志。
 >
-> 轮询任务一天要跑好几轮，所以**只有真领到东西或出错时才写日志**；「已签过」「Buddy 还在路上」「今日名额已用完」这类空跑不落盘，免得有价值的记录被淹没。想逐轮查看就设 `WORKBUDDY_GROWTH_LOG_EMPTY=1`。
+> 轮询默认每轮写日志，包括「已签过」「Buddy 还在路上」等空跑，方便确认任务运行。设 `WORKBUDDY_GROWTH_LOG_EMPTY=0` 可省略空跑日志。
 
 #### 🍎 macOS · launchd
 
@@ -239,7 +239,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/workbuddy-auto-signin.pl
 > [!NOTE]
 > 模板内置三种触发：每天 00:05、每 4 小时、登录时各跑一次。三者跑的都是完整的 `auto`（签到 + 成长中心），所以「每 4 小时」那轮既做成长中心轮询，也顺带兜住「00:05 没开机」的情况。脚本幂等，重复触发不会重复领取。
 >
-> 日志由 launchd 重定向而来，`auto` 模式**每轮都会追加一行**（不像 Windows 的 `silent-poll` 会跳过空跑），且 launchd 不做轮转。介意体积就定期清空，或把模板里的 `StandardOutPath` 指到你自己管理的路径。
+> 日志由 launchd 重定向而来，`auto` 模式**每轮都会追加一行**，且 launchd 不做轮转。介意体积就定期清空，或把模板里的 `StandardOutPath` 指到你自己管理的路径。
 
 #### 🔁 成长中心轮询说明（两个系统通用）
 
@@ -274,7 +274,7 @@ python signin.py auto
 python signin.py auto           # 签到 + 成长中心（礼物 / 任务 / 补登 / 连登兑换 / 抽奖 / Buddy）
 python signin.py silent         # 同 auto，但输出写入日志文件而非 stdout（配合定时任务静默运行）
 python signin.py growth         # 仅成长中心（不签到）
-python signin.py silent-poll    # 轮询：补签（未签才签）+ 成长中心，空跑不写日志（配合模式 B 的轮询任务）
+python signin.py silent-poll    # 轮询：补签（未签才签）+ 成长中心，默认每轮写日志
 python signin.py silent-growth  # silent-poll 的旧名，行为完全相同（老计划任务仍可用）
 python signin.py status         # 仅查签到状态（调试）
 python signin.py doctor         # 离线检查凭据格式及运行时能力，不解密、不联网
@@ -347,7 +347,7 @@ python signin.py accounts
 - **只跑一个**：`--account <名字>`；`--account current` 表示用客户端当前登录的凭据（忽略账号清单）。
 - **积分汇总**：多账号输出顶层的 `credits_gained` 是**本次新领到**的积分合计（签到实发 + 成长中心实发）；`ALREADY` 里的历史积分不计入，避免每天重复累加。
 
-`silent` 每次运行都会写日志；`silent-poll` / `silent-growth` 默认省略空跑日志：所有账号都「已签且成长中心无可领项」时不写日志，有失败、领取或推迟账号时会记录。设置 `WORKBUDDY_GROWTH_LOG_EMPTY=1` 可记录每轮轮询结果。
+`silent`、`silent-poll` 和 `silent-growth` 默认每轮写日志。设置 `WORKBUDDY_GROWTH_LOG_EMPTY=0` 可省略所有账号均无可领取事项的轮询空跑；失败、领取或推迟账号仍会记录。
 
 ### 凭据过期与重新绑定
 
@@ -417,7 +417,7 @@ Windows 按 `WORKBUDDY_EXE → 默认安装目录 → 注册表` 的顺序发现
 | `WORKBUDDY_EXE` | 指定与加密凭据对应的客户端**可执行文件**；Windows 为 `WorkBuddy.exe`，macOS 为 `.app/Contents/MacOS/` 内实际可执行文件。路径错误时直接报告，不静默回退 |
 | `WORKBUDDY_SIGNIN_LOG` | `silent` 模式下日志文件路径（默认 `signin.log`） |
 | `WORKBUDDY_BUDGET_SECONDS` | 单次运行的网络请求时间预算。签到类命令默认 `420`（7 分钟）、上限 `540`；`silent-poll` / `silent-growth` 轮询默认 `180`、上限 `240`。**Windows 上须为正数且小于对应计划任务的 `ExecutionTimeLimit`**（macOS launchd 无此限制）。非法值、`≤0` 或超上限都会夹到安全值，并在输出里附 `config_warning` |
-| `WORKBUDDY_GROWTH_LOG_EMPTY` | 设为 `1`（或 `true`/`yes`/`on`）时，`silent-poll` 连空跑也写日志；默认只在领到东西或出错时记录 |
+| `WORKBUDDY_GROWTH_LOG_EMPTY` | 默认记录轮询空跑；设为 `0` 可省略空跑记录，设为 `1` 可记录 |
 
 > [!NOTE]
 > 时间预算须小于计划任务的 `ExecutionTimeLimit`。两个任务的时限不同，所以上限也分开算：签到任务 PT10M → 上限 `540`，轮询任务 PT5M → 上限 `240`，各留 60 秒给解释器启动和收尾。网络异常时单个请求最坏要耗 30 秒，若不设上限，接口逐个超时会把任务跑穿被系统强杀——而结果是在最后才写日志的，当天记录会整条丢失。预算耗尽时脚本主动收尾并如实记录，剩余项留到下次。
@@ -452,7 +452,7 @@ Windows 按 `WORKBUDDY_EXE → 默认安装目录 → 注册表` 的顺序发现
 | 连登兑换「进阶」未解锁（连登天数不足） | 正常——三档分别要连登满 7 / 14 / 28 天，天数不够时服务端返回 403，脚本按常态处理，不记为失败 |
 | 旧日志反复出现 `date is not broken, no makeup needed` | 旧版误把已补登记录当作待补日期；更新脚本即可。新版从活跃日历选断点；查询后日期已被补上的情况按正常状态跳过 |
 | 查补登日历失败 / 补登模块异常 / 补登失败 | 本轮停止补登，失败原因写入 `report`，并返回非零退出码与 `needs_attention: true`；已领取的签到积分和其他奖励仍保留 |
-| `signin.log` 里查不到轮询记录 | 正常——空跑（已签过 / Buddy 还在路上 / 今日名额已用完）默认不落盘。想逐轮查看就设 `WORKBUDDY_GROWTH_LOG_EMPTY=1` |
+| `signin.log` 里查不到轮询记录 | 检查任务是否运行、日志路径和写入权限；若设置了 `WORKBUDDY_GROWTH_LOG_EMPTY=0`，空跑不会记录 |
 | 轮询任务一直显示「今日旅行名额已用完」 | 服务端每日只放行一次派出，当天已派过就会这样，属正常。第二天自动恢复 |
 | 调试原始返回 | `python signin.py status` 或 `python signin.py all` |
 | `EXPIRED` / 多账号里某个账号 `AUTH_REJECTED` | 该账号的凭据快照已过期或被服务端拒绝：重新登录它，再 `python signin.py bind <名字> --force` |
@@ -538,7 +538,7 @@ python qoder_signin.py auto            # 真的领取（幂等）
 
 `doctor` / `status` / `auto` 都输出一行 JSON。领取成功时 `report` 形如 `成功领取 100 Credits（act-20261013-146，领取后 30 天有效）`；本窗口已领过则是 `本周期已领取 100 Credits（...）`。
 
-**日志**：默认写在脚本同目录的 `qoder_signin.log`。和 WorkBuddy 轮询一样，只有**真领到、活动异常或出错**才落盘；「已领过」「没有活动」不写。想连空跑也记录，设 `QODER_SIGNIN_LOG_EMPTY=1`。
+**日志**：默认写在脚本同目录的 `qoder_signin.log`。只有**真领到、活动异常或出错**才落盘；「已领过」「没有活动」不写。想连空跑也记录，设 `QODER_SIGNIN_LOG_EMPTY=1`。
 
 **卸载**：
 

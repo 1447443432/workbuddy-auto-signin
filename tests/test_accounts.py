@@ -811,10 +811,15 @@ class RotationTests(AccountTestCase):
             self.assertEqual(entry["last_result"], "CLAIMED")
             self.assertTrue(entry["last_run_at"])
 
-    def test_poll_logs_only_when_something_happened(self):
-        with patch.object(signin, "run_daily", side_effect=self.fake_daily(result="ALREADY")):
+    def test_poll_logs_empty_by_default_and_can_disable_it(self):
+        with patch.dict(os.environ, {}, clear=False), patch.object(signin, "run_daily", side_effect=self.fake_daily(result="ALREADY")):
+            os.environ.pop("WORKBUDDY_GROWTH_LOG_EMPTY", None)
             code, emitted = self.run_action("silent-poll")
         self.assertEqual(code, 0)
+        self.assertEqual(emitted[-1]["trigger"], "poll")
+
+        with patch.dict(os.environ, {"WORKBUDDY_GROWTH_LOG_EMPTY": "0"}), patch.object(signin, "run_daily", side_effect=self.fake_daily(result="ALREADY")):
+            code, emitted = self.run_action("silent-poll")
         self.assertEqual(emitted, [])
 
         with patch.object(signin, "run_daily", side_effect=self.fake_daily(quiet=False)):

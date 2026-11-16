@@ -25,7 +25,7 @@ WORKBUDDY_AUTH_FILE 指定。任何模式下都不会打印令牌，可安全分
   python signin.py auto           # 每日自动化：签到 + 成长中心（礼物/任务/补登/兑换/抽奖/Buddy）
   python signin.py silent         # 同 auto，但结果写日志文件而非 stdout（配合 pythonw.exe 静默运行）
   python signin.py growth         # 仅成长中心（不签到）
-  python signin.py silent-poll    # 轮询：补签（未签才签）+ 成长中心，空跑不写日志
+  python signin.py silent-poll    # 轮询：补签（未签才签）+ 成长中心，默认每轮写日志
   python signin.py silent-growth  # silent-poll 的旧名，行为完全相同（老计划任务仍可用）
   python signin.py doctor         # 离线检查凭据格式与运行时能力，不解密、不联网
   python signin.py status         # 仅查签到状态（调试）
@@ -105,7 +105,7 @@ _started_at = None
 _budget_seconds = DEFAULT_BUDGET_SECONDS
 _config_warning = None   # 配置非法时的告警，由 emit 统一带进输出
 
-# 轮询类命令：预算更短，且空跑不落盘。silent-growth 是 silent-poll 的旧名，
+# 轮询类命令：预算更短。silent-growth 是 silent-poll 的旧名，
 # 已安装的计划任务还在用它，必须继续认。
 POLL_ACTIONS = ("silent-poll", "silent-growth")
 
@@ -1974,7 +1974,7 @@ def run_growth(headers, endpoint):
                         return 1, _auth_failure(acode)
                     # 逐条读 results：接单失败必须报出来（常见
                     # "prerequisite not met: first_buddy (no buddy instance found)"），
-                    # 静默吞掉的话接口坏了也没人知道——轮询空跑是不写日志的。
+                    # 静默吞掉的话接口坏了也没人知道。
                     results = dig(abody, "results")
                     if not isinstance(results, list):
                         results = [{"task_code": c,
@@ -2743,10 +2743,9 @@ def _run_rotation(action, contexts, warnings):
     if warnings:
         out["account_warnings"] = warnings
     if action in POLL_ACTIONS:
-        # 空跑默认不落盘——一天要跑好几轮，全写进去只会把真正有价值的记录
-        # 淹没在一串"Buddy 旅行中"里。要看完整过程就设 WORKBUDDY_GROWTH_LOG_EMPTY=1。
+        # 默认记录空跑，便于确认计划任务实际执行。
         out["trigger"] = "poll"
-        if (not quiet_all) or _env_flag("WORKBUDDY_GROWTH_LOG_EMPTY"):
+        if (not quiet_all) or "WORKBUDDY_GROWTH_LOG_EMPTY" not in os.environ or _env_flag("WORKBUDDY_GROWTH_LOG_EMPTY"):
             emit(out, action)
         return overall
     emit(out, action)
@@ -2800,7 +2799,7 @@ def _run(action, account=None, source=None, force=False):
         emit(step, action)
     if not steps:
         if action in POLL_ACTIONS:
-            if (not quiet) or _env_flag("WORKBUDDY_GROWTH_LOG_EMPTY"):
+            if (not quiet) or "WORKBUDDY_GROWTH_LOG_EMPTY" not in os.environ or _env_flag("WORKBUDDY_GROWTH_LOG_EMPTY"):
                 emit(out, action)
         else:
             emit(out, action)
