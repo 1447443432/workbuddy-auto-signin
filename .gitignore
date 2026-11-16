@@ -6,6 +6,8 @@ __pycache__/
 # WorkBuddy local workspace data (contains credentials / memory / automation config)
 .workbuddy/
 signin.log
+signin.log.[1-3]
+signin.log.lock
 qoder_signin.log
 # 多账号凭据快照：本机登录凭据副本，绝不能提交
 accounts/

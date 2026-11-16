@@ -6,10 +6,10 @@
 
 **每天自动领取 WorkBuddy 签到积分 + Qoder CN 每日 100 Credits 的小脚本**
 
-[![版本](https://img.shields.io/github/v/release/88lin/workbuddy-auto-signin?style=flat&logo=github&logoColor=white&label=%E7%89%88%E6%9C%AC&color=1F6FEB)](https://github.com/88lin/workbuddy-auto-signin/releases)
+[![版本](https://img.shields.io/github/v/release/88lin/workbuddy-auto-signin?style=flat&logo=github&logoColor=white&label=%E7%89%88%E6%9C%AC&color=1F6FEB)](https://github.com/1447443432/workbuddy-auto-signin/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8B5CF6?style=flat&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Win%20%7C%20macOS%20%7C%20Linux-F43F5E?style=flat&logo=windows&logoColor=white)]()
-[![Stars](https://img.shields.io/github/stars/88lin/workbuddy-auto-signin?style=flat&logo=github&logoColor=white&color=F59E0B)](https://github.com/88lin/workbuddy-auto-signin/stargazers)
+[![Stars](https://img.shields.io/github/stars/88lin/workbuddy-auto-signin?style=flat&logo=github&logoColor=white&color=F59E0B)](https://github.com/1447443432/workbuddy-auto-signin/stargazers)
 [![Author](https://img.shields.io/badge/Author-88lin-10B981?style=flat&logo=github&logoColor=white)](https://github.com/88lin)
 
 </div>
@@ -17,30 +17,11 @@
 > 两个自包含的 Python 脚本，每天分别帮你领取 **WorkBuddy**（腾讯 AI 编程助手）的签到积分和 **Qoder CN** 的 100 通用 Credits。两者都只读取你自己机器上的登录态，零内置密钥，可安全分享。
 >
 > Qoder CN 是可选的独立功能，Windows 下可一键安装独立计划任务，不影响 WorkBuddy；详见[可选：Qoder CN](#qoder-cn)。
->
-> 👤 作者：[88lin](https://dev.88lin.eu.org/) · 📦 仓库：[github.com/88lin/workbuddy-auto-signin](https://github.com/88lin/workbuddy-auto-signin)
 
 > [!TIP]
 > **⭐ 顺手点个 Star 再往下看**——签到接口是从桌面端逆向来的，腾讯改一版它就可能失效，修复都会第一时间推到这里。Star 一下，等哪天连签莫名其妙断了，你能一秒翻回这个仓库。
 
-## 💖 赞助商
 
-> 想出现在这里？联系 [bytevian@qq.com](mailto:bytevian@qq.com)
-
-<table>
-<tr>
-<td width="180" align="center" valign="middle">
-  <a href="https://agentrouter.org/register?aff=G5Sl"><img src="https://raw.githubusercontent.com/88lin/picx-images-hosting/master/90C5FAD072EA247822CB88BB32512A41.webp" alt="Agent Router" width="150"></a>
-</td>
-<td valign="middle"><b><a href="https://agentrouter.org/register?aff=G5Sl">Agent Router</a></b>&nbsp;是免费公益大模型API平台，支持Claude-opus-5.5、GPT-6 Astra、GPT-6.1 Sol、deepseek-v4-flash等主流模型，国内直连。注册送＄175（每日签到得＄25，被邀得＄50），支持GitHub/LinuxDo登录。</td>
-</tr>
-<tr>
-<td width="180" align="center" valign="middle">
-  <a href="https://www.sheapi.top/sign-up?aff=MvcR"><img src="https://raw.githubusercontent.com/88lin/picx-images-hosting/master/ScreenShot_2026-08-06_174058_726.webp" alt="SheApi" width="150"></a>
-</td>
-<td valign="middle"><b><a href="https://www.sheapi.top/sign-up?aff=MvcR">SheApi</a></b>&nbsp;是一家可靠高效的 API 中转服务提供商，主要提供 GPT-6 Astra、kimi-k3、grok-4.7、glm-5.3、deepseek-v4.1-flash 等主流模型的高稳定中转能力，Codex 倍率补贴低至 0.06，GPT-Image-2生图每张0.04。受邀注册送$1 体验金，每日签到还可领取专属免费额度。</td>
-</tr>
-</table>
 
 ## ✨ 特性
 
@@ -94,7 +75,7 @@
 **第 1 步 · 拿到脚本**
 
 ```bash
-git clone https://github.com/88lin/workbuddy-auto-signin.git
+git clone https://github.com/1447443432/workbuddy-auto-signin.git
 cd workbuddy-auto-signin
 ```
 
@@ -120,7 +101,7 @@ cd workbuddy-auto-signin
 
 > [!TIP]
 > **懒人一键**：上面两步都能省——直接把仓库链接丢给 WorkBuddy：
-> `帮我把这个仓库跑起来并设置每天 00:05 自动签到：https://github.com/88lin/workbuddy-auto-signin`
+> `帮我把这个仓库跑起来并设置每天 00:05 自动签到：https://github.com/1447443432/workbuddy-auto-signin`
 > 它会自己 `clone`、建好自动化、把绝对路径和 Python 命令名一并填好。（这条是**一次性**的设置指令，和上面那条「每次触发时执行」的提示词不是一回事。）
 
 **想要成长中心轮询？** 再建一条自动化即可：计划设为「每 4 小时」，提示词照抄上面那句（**仍然用 `auto`**）。它会先查签到状态、未签才补，再跑成长中心——所以这条轮询顺带兜住了「00:05 没跑成」的情况；已签过时只是一个查询请求，不会重复领取。
@@ -137,7 +118,7 @@ cd workbuddy-auto-signin
 **第 1 步 · 拿到脚本**（两个系统通用；本地已有仓库就跳过）
 
 ```bash
-git clone https://github.com/88lin/workbuddy-auto-signin.git
+git clone https://github.com/1447443432/workbuddy-auto-signin.git
 cd workbuddy-auto-signin
 ```
 
@@ -196,10 +177,12 @@ Get-Content signin.log -Tail 5   # 或用记事本打开
 
 > [!TIP]
 > **懒人一键**：直接把仓库链接发给 WorkBuddy，让它帮你装好——
-> `帮我 clone 这个仓库并运行 install-windows.ps1 完成自动签到设置：https://github.com/88lin/workbuddy-auto-signin`
+> `帮我 clone 这个仓库并运行 install-windows.ps1 完成自动签到设置：https://github.com/1447443432/workbuddy-auto-signin`
 
 > [!NOTE]
 > Windows 侧用的是 `silent` / `silent-poll` 参数：结果写入 `signin.log` 而非 stdout，配合 `pythonw.exe`（无控制台窗口）实现完全静默。日志文件路径可用环境变量 `WORKBUDDY_SIGNIN_LOG` 覆盖。
+
+> WorkBuddy 脚本日志写入前超过 1 MiB 时轮转，保留当前日志和最近 3 个备份（`signin.log.1` 到 `.3`），最旧备份会被覆盖；单条超大日志可能超过该大小。轮转和写入通过锁文件 `signin.log.lock` 协调并发任务。自定义日志路径同样适用。此策略不管理 Qoder 或 macOS launchd 的 stdout/stderr 日志。
 >
 > 轮询任务一天要跑好几轮，所以**只有真领到东西或出错时才写日志**；「已签过」「Buddy 还在路上」「今日名额已用完」这类空跑不落盘，免得有价值的记录被淹没。想逐轮查看就设 `WORKBUDDY_GROWTH_LOG_EMPTY=1`。
 
@@ -223,7 +206,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/workbuddy-auto-signin.pl
 
 > [!TIP]
 > **懒人一键**：直接把仓库链接发给 WorkBuddy，让它帮你装好——
-> `帮我 clone 这个仓库，并按 workbuddy-auto-signin.plist.example 配好 macOS launchd 定时任务：https://github.com/88lin/workbuddy-auto-signin`
+> `帮我 clone 这个仓库，并按 workbuddy-auto-signin.plist.example 配好 macOS launchd 定时任务：https://github.com/1447443432/workbuddy-auto-signin`
 
 > [!WARNING]
 > macOS 上有两个坑，踩中都是「任务静默失败、日志空空如也」：
@@ -252,7 +235,7 @@ launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/workbuddy-auto-signin.pl
 想先手动跑一次、确认脚本可用：
 
 ```bash
-git clone https://github.com/88lin/workbuddy-auto-signin.git
+git clone https://github.com/1447443432/workbuddy-auto-signin.git
 cd workbuddy-auto-signin
 python signin.py auto
 ```
@@ -384,7 +367,7 @@ python signin.py bind <名字> --force
 
 客户端升级可能改变私有接口或格式。先运行 `python signin.py doctor` 检查本地能力，再运行只读的 `python signin.py status` 验证服务端认证；`doctor` 成功不表示解密或服务端认证已验证。
 
-Windows 按 `WORKBUDDY_EXE → 默认安装目录 → 注册表` 的顺序发现客户端。只有默认目录找不到时，才读取当前用户和本机的 32/64 位卸载注册条目，支持自定义安装目录、带空格或逗号的路径。注册表权限不足或条目失效会跳过；未登记的安装仍可用 `WORKBUDDY_EXE` 指定路径。注册表探测只读取信息，不修改注册表，也不执行卸载命令。
+Windows 按 `WORKBUDDY_EXE → 默认安装目录 → 注册表` 的顺序发现客户端。未显式指定时，会离线探测候选运行时的原生接口，跳过不兼容版本；默认目录没有可用版本时继续检查注册表。探测不读取密钥、不联网。显式指定路径时不自动切换；若密钥不匹配，请指定凭据对应的客户端。注册表权限不足或条目失效会跳过；未登记的安装仍可用 `WORKBUDDY_EXE` 指定路径。注册表探测只读取信息，不修改注册表，也不执行卸载命令。已打开的终端和运行中的进程不会自动继承新设置的环境变量，需要在当前窗口设置或重新启动；重新安装定时任务可能覆盖手动调整的任务动作。
 
 签到流程：
 
@@ -597,7 +580,7 @@ bash uninstall-qoder-macos.sh
 
 <div align="center">
 
-**看到这儿了，说明这脚本大概率对你有用 —— 那就[点个 ⭐ Star](https://github.com/88lin/workbuddy-auto-signin) 吧**
+**看到这儿了，说明这脚本大概率对你有用 —— 那就[点个 ⭐ Star](https://github.com/1447443432/workbuddy-auto-signin) 吧**
 
 一秒的事，却能在接口哪天变了、脚本悄悄失灵时，让你还找得到回来的路。
 
@@ -607,4 +590,4 @@ bash uninstall-qoder-macos.sh
 
 ## 📄 协议
 
-[MIT](LICENSE) © 2026 [88lin](https://dev.88lin.eu.org/) · 仓库：[github.com/88lin/workbuddy-auto-signin](https://github.com/88lin/workbuddy-auto-signin)
+[MIT](LICENSE) © 2026 [88lin](https://dev.88lin.eu.org/) · 仓库：[github.com/88lin/workbuddy-auto-signin](https://github.com/1447443432/workbuddy-auto-signin)

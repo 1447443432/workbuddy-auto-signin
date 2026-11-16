@@ -434,7 +434,7 @@ def _windows_registry_runtimes():
                 continue
 
 
-def find_workbuddy_runtime():
+def find_workbuddy_runtime(compatible=False):
     override = os.environ.get("WORKBUDDY_EXE")
     if override:
         path = os.path.abspath(os.path.expanduser(override))
@@ -452,14 +452,37 @@ def find_workbuddy_runtime():
     elif sys.platform == "darwin":
         candidates = [_mac_runtime(os.path.join(root, "WorkBuddy.app"))
                       for root in ("/Applications", os.path.join(home, "Applications"))]
-    for path in candidates:
-        if path and os.path.isfile(path) and (os.name == "nt" or os.access(path, os.X_OK)):
-            return os.path.abspath(path)
-    if sys.platform == "win32":
+    def select(paths):
+        nonlocal found, failure
+        for path in paths:
+            if not path or not os.path.isfile(path) or (os.name != "nt" and not os.access(path, os.X_OK)):
+                continue
+            path = os.path.abspath(path)
+            identity = os.path.normcase(path)
+            if identity in seen:
+                continue
+            seen.add(identity)
+            found = True
+            if compatible:
+                try:
+                    _run_auth_helper(path, {"operation": "probe"})
+                except AuthError as exc:
+                    if exc.reason not in ("RUNTIME_UNAVAILABLE", "HELPER_PROTOCOL"):
+                        raise
+                    failure = exc
+                    continue
+            return path
+        return None
+
+    found, failure, seen = False, None, set()
+    selected = select(candidates)
+    if not selected and sys.platform == "win32":
         with closing(_windows_registry_runtimes()) as entries:
-            registered = next(entries, None)
-        if registered:
-            return registered
+            selected = select(entries)
+    if selected:
+        return selected
+    if found and failure:
+        raise failure
     raise AuthError("RUNTIME_NOT_FOUND")
 
 
@@ -554,7 +577,7 @@ def resolve_session(session):
     _validate_session(session)
     token = session["auth"]["accessToken"]
     if _token_format(token) != "plaintext":
-        token = _run_auth_helper(find_workbuddy_runtime(), {"operation": "decrypt", "value": token})["accessToken"]
+        token = _run_auth_helper(find_workbuddy_runtime(compatible=True), {"operation": "decrypt", "value": token})["accessToken"]
     _sensitive_values.add(token)
     return dict(session, auth=dict(session["auth"], accessToken=token))
 
@@ -565,7 +588,7 @@ def run_doctor(session):
     out = {"result": "AUTH_READY", "credential_format": kind, "needs_attention": False,
            "report": "本地凭据格式有效；未验证服务端登录状态", "online_checked": False}
     if kind == "sym-v1":
-        runtime = find_workbuddy_runtime()
+        runtime = find_workbuddy_runtime(compatible=True)
         probe = _run_auth_helper(runtime, {"operation": "probe"})
         out.update(runtime=runtime, electron_version=probe["electron"],
                    report="已识别加密凭据，运行时具备解密能力；未提取密钥、未验证解密或服务端登录状态")
@@ -1755,10 +1778,24 @@ def emit(out, action):
     line = "[%s] %s\n" % (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), payload)
     default_log = os.path.join(os.path.dirname(os.path.abspath(__file__)), "signin.log")
     # 自定义路径不可写时回退到脚本同目录，避免无窗口运行下结果彻底丢失
-    for path in (os.environ.get("WORKBUDDY_SIGNIN_LOG") or default_log, default_log):
+    for path in dict.fromkeys((os.environ.get("WORKBUDDY_SIGNIN_LOG") or default_log, default_log)):
         try:
-            with open(path, "a", encoding="utf-8") as lf:
-                lf.write(line)
+            with open(path + ".lock", "a+b") as lock:
+                _acquire_registry_lock(lock, 2.0)
+                try:
+                    # Keep three previous files; serialize rotation and append across tasks.
+                    try:
+                        if os.path.getsize(path) + len(line.encode("utf-8")) > 1024 * 1024:
+                            for index in (2, 1):
+                                if os.path.exists(path + ".%d" % index):
+                                    os.replace(path + ".%d" % index, path + ".%d" % (index + 1))
+                            os.replace(path, path + ".1")
+                    except OSError:
+                        pass  # A rotation failure must not prevent writing the current result.
+                    with open(path, "a", encoding="utf-8") as lf:
+                        lf.write(line)
+                finally:
+                    _release_registry_lock(lock)
             return
         except Exception:
             continue

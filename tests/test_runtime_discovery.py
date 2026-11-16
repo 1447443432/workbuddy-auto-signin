@@ -86,6 +86,15 @@ def entry(name="WorkBuddy 5.6.2", location=None, icon=None):
 
 
 class RegistryDiscoveryTests(unittest.TestCase):
+    def test_compatible_selection_skips_unsupported_runtime(self):
+        with patch.object(sys, "platform", "win32"), \
+                patch.dict(os.environ, {"WORKBUDDY_EXE": "", "LOCALAPPDATA": r"C:\Local", "ProgramFiles": r"C:\System"}), \
+                patch("os.path.isfile", return_value=True), patch("os.access", return_value=True), \
+                patch.object(signin, "_run_auth_helper", side_effect=[signin.AuthError("RUNTIME_UNAVAILABLE"), {"electron": "37"}]) as helper:
+            result = signin.find_workbuddy_runtime(compatible=True)
+            self.assertEqual(result, os.path.abspath(os.path.join(r"C:\System", "WorkBuddy", "WorkBuddy.exe")))
+            self.assertEqual([call.args[1] for call in helper.call_args_list], [{"operation": "probe"}] * 2)
+
     def discover(self, registry, files=(), full=False):
         existing = {ntpath.normcase(path) for path in files}
         with patch.object(sys, "platform", "win32"), patch.dict(sys.modules, {"winreg": registry}), \

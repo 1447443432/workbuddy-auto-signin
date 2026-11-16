@@ -128,6 +128,13 @@ class AuthTests(unittest.TestCase):
         self.assertNotIn("accessToken", json.dumps(out))
         post.assert_not_called()
 
+    def test_log_rotation_retains_recent_entries(self):
+        log = Path(os.environ["WORKBUDDY_SIGNIN_LOG"])
+        log.write_text("x" * (1024 * 1024), encoding="utf-8")
+        signin.emit({"result": "OK", "report": "new"}, "silent")
+        self.assertEqual(Path(str(log) + ".1").stat().st_size, 1024 * 1024)
+        self.assertIn('"report": "new"', log.read_text(encoding="utf-8"))
+
     def test_all_silent_modes_log_auth_errors(self):
         self.auth_file.write_text(json.dumps(session(wrapper(suite=99))), encoding="utf-8")
         before = self.auth_file.read_bytes()
