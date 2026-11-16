@@ -612,4 +612,4 @@ bash uninstall-qoder-macos.sh
 
 ## 📄 协议
 
-[MIT](LICENSE) © 2026 [88lin](https://dev.88lin.eu.org/) · 仓库：[github.com/88lin/workbuddy-auto-signin](https://github.com/1447443432/workbuddy-auto-signin)
+[MIT](LICENSE) © 2026 [1447443432](https://github.com/1447443432/workbuddy-auto-signin) · 仓库：[1447443432/workbuddy-auto-signin](https://github.com/1447443432/workbuddy-auto-signin)
