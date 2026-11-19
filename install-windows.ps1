@@ -12,7 +12,7 @@
 #
 # 会创建两个定时任务：
 #   1) WorkBuddyAutoSignin   每天 00:05    签到 + 成长中心，静默写 signin.log
-#   2) WorkBuddyGrowthPoll   每 4 小时     补签（未签才签）+ 成长中心全套
+#   2) WorkBuddyGrowthPoll   每天 05/17 点  补签（未签才签）+ 成长中心全套
 #
 # 两者都零 Token、无窗口、开机错过会自动补跑。
 
@@ -102,7 +102,7 @@ Write-Host " $signin" -ForegroundColor Green
 Write-Host "[3/3] 创建定时任务 ..." -NoNewline
 $taskRows = @(
     @{ Name = "WorkBuddyAutoSignin"; When = "每天 00:05"; What = "签到 + 成长中心" },
-    @{ Name = "WorkBuddyGrowthPoll"; When = "每 4 小时"; What = "补签 + 成长中心全套" }
+    @{ Name = "WorkBuddyGrowthPoll"; When = "每天 05/17 点"; What = "补签 + 成长中心全套" }
 )
 $registeredTasks = @()
 $verifiedTasks = @()
@@ -130,19 +130,19 @@ try {
         -Description "WorkBuddy daily auto signin (silent, zero token)" -Force -ErrorAction Stop | Out-Null
     $registeredTasks += $currentTask
 
-    # 任务 2：轮询（每天 01/05/09/13/17/21 点，共 6 次）
-    # 刻意用 6 个独立的 Daily 触发器，而不是"Daily + 每 4 小时重复"：
+    # 任务 2：轮询（每天 05/17 点，共 2 次）
+    # 刻意用独立的 Daily 触发器，而不是重复触发器：
     # 实测后者的重复实例一旦错过（关机/睡眠）就永久跳过，StartWhenAvailable
     # 不会为它补跑——本机就出现过 05:00 跑完后 09/13 点直接跳到 17:00 的情况。
     # 独立触发器则每次错过都会在下次开机时补上。
     $currentTask = "WorkBuddyGrowthPoll"
     $tri2 = @()
-    foreach ($hh in @("01:00", "05:00", "09:00", "13:00", "17:00", "21:00")) {
+    foreach ($hh in @("05:00", "17:00")) {
         $tri2 += New-ScheduledTaskTrigger -Daily -At $hh -ErrorAction Stop
     }
     # 跑的是 silent-poll：先查签到状态、未签才补签，再跑成长中心。签到的机会因此
-    # 从"一天一次"变成"一天七次"——00:05 那次撞上关机/睡眠/刚开机网络没就绪时，
-    # 01 点那轮就能兜住，而不是眼睁睁断掉连签。（silent-growth 是它的旧名，
+    # 从"一天一次"变成"一天三次"——00:05 那次撞上关机/睡眠/刚开机网络没就绪时，
+    # 后续轮询仍有机会补签。（silent-growth 是它的旧名，
     # 已经装过旧版计划任务的机器继续用那个名字也能跑，行为一致。）
     $act2 = New-ScheduledTaskAction -Execute $pythonw -Argument "`"$signin`" silent-poll" -ErrorAction Stop
     $set2 = New-ScheduledTaskSettingsSet -StartWhenAvailable -Hidden `

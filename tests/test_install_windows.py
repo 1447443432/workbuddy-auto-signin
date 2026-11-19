@@ -175,7 +175,7 @@ class WindowsInstallerTests(unittest.TestCase):
                     self.assertRegex(value["action"]["Arguments"], '^".*signin[.]py" ' + mode + '$')
                 self.assertEqual(events[0]["value"]["triggers"]["At"], "00:05")
                 self.assertEqual([t["At"] for t in events[1]["value"]["triggers"]],
-                                 ["01:00", "05:00", "09:00", "13:00", "17:00", "21:00"])
+                                 ["05:00", "17:00"])
                 self.assertTrue(all(e["value"] == "\\" for e in events[2:]))
 
     def test_bracketed_install_directory_resolves_literal_paths(self):
